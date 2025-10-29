@@ -82,7 +82,7 @@ export class CombatCoordinator {
       movements: optimizedMovements,
       waveInfo: {
         currentWave: this.waveManager.getCurrentWave(),
-        enemyLimit: 10,
+        enemyLimit: 6,
         currentCount: limitedEnemies.length
       }
     };

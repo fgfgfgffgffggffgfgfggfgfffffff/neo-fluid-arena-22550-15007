@@ -8,7 +8,7 @@ import { AssassinEnemy } from "../entities/AssassinEnemy";
  * 确保每波最多10个敌人，超过则清除多余的
  */
 export class WaveManager {
-  private maxEnemiesPerWave = 10;
+  private maxEnemiesPerWave = 6;
   private currentWave = 1;
   private enemiesSpawned = 0;
   private waveInProgress = false;
@@ -130,7 +130,7 @@ export class WaveManager {
    * 获取当前波次应该生成的敌人数量
    */
   public getEnemiesForWave(): number {
-    const baseEnemies = Math.min(5 + this.currentWave, this.maxEnemiesPerWave);
+    const baseEnemies = Math.min(3 + this.currentWave, this.maxEnemiesPerWave);
     return baseEnemies;
   }
   

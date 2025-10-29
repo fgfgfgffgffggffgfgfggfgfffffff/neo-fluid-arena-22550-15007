@@ -41,7 +41,7 @@ export class GameEngine {
   private gameReview: GameReview = new GameReview();
   private maxBosses = 6;
   private bossesKilledInWave = 0;
-  private maxEnemies = 10;
+  private maxEnemies = 6;
   private enemySpawnTimer = 0;
   private enemySpawnInterval = 2000;
   private maxAssassins = 0;
@@ -69,7 +69,7 @@ export class GameEngine {
   private lastFrameTime: number = 0;
   private playerStatsUpdateTimer = 0;
   private nextWaveScheduled = false;
-  private waveSize = 10;
+  private waveSize = 6;
 
   constructor(canvas: HTMLCanvasElement, callbacks: GameCallbacks) {
     this.canvas = canvas;
@@ -404,7 +404,7 @@ export class GameEngine {
     };
 
     const bullet = new Bullet(shootPos, normalized, 8);
-    (bullet as any).damage = this.player.autoAimMode ? 2 : 10;
+    (bullet as any).damage = this.player.autoAimMode ? 8 : 30; // 3x damage for fast kills
     this.bullets.push(bullet);
     
     // Record shot for player analyzer

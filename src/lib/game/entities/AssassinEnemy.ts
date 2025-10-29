@@ -8,13 +8,13 @@ export class AssassinEnemy {
   public velocity: Vector2D = { x: 0, y: 0 };
   public radius: number;
   public health = 1; // Only 1 HP - dies instantly
-  private baseSpeed = 180; // 优化后的速度：快速但流畅
+  private baseSpeed = 60; // Slow and smooth movement // 优化后的速度：快速但流畅
   private orbitRadius = 200; // Orbit distance
   private orbitAngle = Math.random() * Math.PI * 2;
-  private orbitSpeed = 0.002; // 稍微降低轨道速度使其更流畅
+  private orbitSpeed = 0.001; // Slower orbit for smooth movement
   private chargeMode = false; // When true, charges at player
   private chargeTimer = 0;
-  private chargeInterval = 3000; // 3秒冲锋一次
+  private chargeInterval = 5000; // Charge every 5 seconds
   private orbitCount = 0; // Track orbits
   private lastAngle = 0; // Track angle for orbit counting
   private dodgeAngle = 0;
@@ -134,13 +134,13 @@ export class AssassinEnemy {
       // Dodge perpendicular to bullet
       targetX = this.position.x + Math.cos(this.dodgeAngle) * 150;
       targetY = this.position.y + Math.sin(this.dodgeAngle) * 150;
-      speedMultiplier = 2;
+      speedMultiplier = 1.3; // Slower dodge
     } else if (this.chargeMode) {
       // Charge at predicted player position
       const predicted = this.predictPlayerPosition(player);
       targetX = predicted.x;
       targetY = predicted.y;
-      speedMultiplier = 1.8;
+      speedMultiplier = 1.2; // Slower charge
       
       // Exit charge mode when close
       const dx = player.position.x - this.position.x;
@@ -154,7 +154,7 @@ export class AssassinEnemy {
       this.orbitAngle += this.orbitSpeed * deltaTime;
       targetX = player.position.x + Math.cos(this.orbitAngle) * this.orbitRadius;
       targetY = player.position.y + Math.sin(this.orbitAngle) * this.orbitRadius;
-      speedMultiplier = 1.2;
+      speedMultiplier = 1.0; // Normal speed orbit
     }
 
     // Move towards target with smooth interpolation
