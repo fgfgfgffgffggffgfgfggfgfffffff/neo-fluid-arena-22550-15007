@@ -70,9 +70,19 @@ export const Game = () => {
       }
     }, 100);
 
+    // Add P key listener for AI Coach
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'p' || e.key === 'P') {
+        handleShowAIAnalysis();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+
     return () => {
       engine.stop();
       clearInterval(healthInterval);
+      window.removeEventListener('keydown', handleKeyPress);
     };
   }, [gameStarted]);
 

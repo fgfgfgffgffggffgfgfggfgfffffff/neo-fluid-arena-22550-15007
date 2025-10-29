@@ -8,13 +8,13 @@ export class AssassinEnemy {
   public velocity: Vector2D = { x: 0, y: 0 };
   public radius: number;
   public health = 1; // Only 1 HP - dies instantly
-  private baseSpeed = 400; // 50x enhanced: 8 * 50 = 400
+  private baseSpeed = 180; // 优化后的速度：快速但流畅
   private orbitRadius = 200; // Orbit distance
   private orbitAngle = Math.random() * Math.PI * 2;
-  private orbitSpeed = 0.003; // Orbit speed
+  private orbitSpeed = 0.002; // 稍微降低轨道速度使其更流畅
   private chargeMode = false; // When true, charges at player
   private chargeTimer = 0;
-  private chargeInterval = 60; // 50x enhanced: charge every 60ms (extremely fast)
+  private chargeInterval = 3000; // 3秒冲锋一次
   private orbitCount = 0; // Track orbits
   private lastAngle = 0; // Track angle for orbit counting
   private dodgeAngle = 0;
@@ -22,7 +22,8 @@ export class AssassinEnemy {
   private lifeTimer = 0; // Track lifetime
   private maxLifetime = 30000; // 30 seconds
   private trail: Vector2D[] = [];
-  private maxTrailLength = 25;
+  private maxTrailLength = 20;
+  private smoothing = 0.15; // 平滑系数
   
   // Prediction
   private playerHistory: Vector2D[] = [];
@@ -156,18 +157,28 @@ export class AssassinEnemy {
       speedMultiplier = 1.2;
     }
 
-    // Move towards target
+    // Move towards target with smooth interpolation
     const dx = targetX - this.position.x;
     const dy = targetY - this.position.y;
     const distance = Math.sqrt(dx ** 2 + dy ** 2);
 
     if (distance > 5) {
-      this.velocity.x = (dx / distance) * this.baseSpeed * speedMultiplier;
-      this.velocity.y = (dy / distance) * this.baseSpeed * speedMultiplier;
+      // 计算目标速度
+      const targetVelX = (dx / distance) * this.baseSpeed * speedMultiplier;
+      const targetVelY = (dy / distance) * this.baseSpeed * speedMultiplier;
+      
+      // 使用平滑插值而不是直接赋值，使移动更流畅
+      this.velocity.x += (targetVelX - this.velocity.x) * this.smoothing;
+      this.velocity.y += (targetVelY - this.velocity.y) * this.smoothing;
+    } else {
+      // 接近目标时减速
+      this.velocity.x *= 0.9;
+      this.velocity.y *= 0.9;
     }
 
-    this.position.x += this.velocity.x;
-    this.position.y += this.velocity.y;
+    // 应用速度（乘以deltaTime使其与帧率无关）
+    this.position.x += this.velocity.x * (deltaTime / 1000);
+    this.position.y += this.velocity.y * (deltaTime / 1000);
     
     // Update trail
     this.trail.unshift({ ...this.position });
@@ -189,28 +200,45 @@ export class AssassinEnemy {
     const x = this.position.x;
     const y = this.position.y;
 
-    // Enhanced dissipating trail effect
-    for (let i = 0; i < this.trail.length; i++) {
-      const alpha = (1 - (i / this.trail.length)) * 0.8;
-      const radius = this.radius * (1 - (i / this.trail.length) * 0.7);
+    // Enhanced smooth trail effect with glow
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    
+    for (let i = 0; i < this.trail.length - 1; i++) {
+      const alpha = (1 - (i / this.trail.length)) * 0.7;
+      const radius = this.radius * (1 - (i / this.trail.length) * 0.6);
       
+      // 渐变光晕效果
       const gradient = ctx.createRadialGradient(
         this.trail[i].x,
         this.trail[i].y,
         0,
         this.trail[i].x,
         this.trail[i].y,
-        radius * 3
+        radius * 2.5
       );
-      gradient.addColorStop(0, `hsla(280, 100%, 70%, ${alpha * 0.6})`);
-      gradient.addColorStop(0.5, `hsla(280, 100%, 60%, ${alpha * 0.3})`);
+      gradient.addColorStop(0, `hsla(280, 100%, 75%, ${alpha * 0.8})`);
+      gradient.addColorStop(0.4, `hsla(280, 100%, 65%, ${alpha * 0.5})`);
+      gradient.addColorStop(0.7, `hsla(280, 100%, 55%, ${alpha * 0.2})`);
       gradient.addColorStop(1, "transparent");
       
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(this.trail[i].x, this.trail[i].y, radius * 3, 0, Math.PI * 2);
+      ctx.arc(this.trail[i].x, this.trail[i].y, radius * 2.5, 0, Math.PI * 2);
       ctx.fill();
+      
+      // 连接线效果
+      if (i < this.trail.length - 1) {
+        ctx.strokeStyle = `hsla(280, 100%, 70%, ${alpha * 0.4})`;
+        ctx.lineWidth = radius * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(this.trail[i].x, this.trail[i].y);
+        ctx.lineTo(this.trail[i + 1].x, this.trail[i + 1].y);
+        ctx.stroke();
+      }
     }
+    
+    ctx.restore();
 
     // Outermost glow - purple/magenta
     const outerGlow = ctx.createRadialGradient(x, y, 0, x, y, this.radius * 4);
