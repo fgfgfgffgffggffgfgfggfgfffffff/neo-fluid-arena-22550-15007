@@ -12,6 +12,7 @@ import { TeamCoordinator } from "./ai/TeamCoordinator";
 import { DifficultyManager } from "./ai/DifficultyManager";
 import { PlayerAnalyzer } from "./ai/PlayerAnalyzer";
 import { GameReview } from "./ai/GameReview";
+import { CombatCoordinator } from "./ai/CombatCoordinator";
 import { Vector2D } from "./types";
 
 interface GameCallbacks {
@@ -39,6 +40,7 @@ export class GameEngine {
   private difficultyManager: DifficultyManager = new DifficultyManager();
   private playerAnalyzer: PlayerAnalyzer = new PlayerAnalyzer();
   private gameReview: GameReview = new GameReview();
+  private combatCoordinator: CombatCoordinator;
   private maxBosses = 6;
   private bossesKilledInWave = 0;
   private maxEnemies = 6;
@@ -75,6 +77,8 @@ export class GameEngine {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d")!;
     this.callbacks = callbacks;
+    
+    this.combatCoordinator = new CombatCoordinator(canvas.width, canvas.height);
 
     this.resize();
     window.addEventListener("resize", () => this.resize());
@@ -114,6 +118,11 @@ export class GameEngine {
         e.preventDefault();
         this.player.toggleAutoAim();
         this.callbacks.onAutoAimChange(this.player.autoAimMode);
+      }
+      if (e.code === "KeyQ") {
+        e.preventDefault();
+        this.player.toggleAIAutoPilot();
+        this.logAI(`AI Auto-pilot: ${this.player.aiAutoPilot ? "ON" : "OFF"}`, this.player.aiAutoPilot ? "success" : "info");
       }
     });
   }
@@ -685,7 +694,21 @@ export class GameEngine {
     if (this.gameOver) return;
 
     this.updateMouseHover();
-    this.player.update(this.mousePosition, deltaTime, this.canvas);
+    
+    // AI Auto-pilot: let AI control player movement
+    if (this.player.aiAutoPilot) {
+      const allEnemies = [...this.enemies, ...this.assassins, ...this.bosses];
+      const aiTarget = this.combatCoordinator.getAssistantAI().calculatePlayerMovement(
+        this.player,
+        allEnemies,
+        this.bullets,
+        this.canvas.width,
+        this.canvas.height
+      );
+      this.player.update(aiTarget, deltaTime, this.canvas);
+    } else {
+      this.player.update(this.mousePosition, deltaTime, this.canvas);
+    }
     
     // Record player position for analysis
     this.playerAnalyzer.recordPosition(this.player.position);

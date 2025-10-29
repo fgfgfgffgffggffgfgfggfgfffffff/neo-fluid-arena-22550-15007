@@ -16,6 +16,9 @@ export class Player {
 
   // Auto-aim mode
   public autoAimMode = false;
+  
+  // AI auto-pilot mode
+  public aiAutoPilot = false;
 
   constructor(position: Vector2D, radius: number) {
     this.position = position;
@@ -61,6 +64,11 @@ export class Player {
     this.autoAimMode = !this.autoAimMode;
     this.orbitersActive = this.autoAimMode; // Activate orbiters with auto-aim
     console.log(`🎯 Auto-aim mode: ${this.autoAimMode ? "ON (AI Orbiters)" : "OFF"}`);
+  }
+  
+  public toggleAIAutoPilot() {
+    this.aiAutoPilot = !this.aiAutoPilot;
+    console.log(`🤖 AI Auto-pilot: ${this.aiAutoPilot ? "ON" : "OFF"}`);
   }
 
   public takeDamage(amount: number): boolean {

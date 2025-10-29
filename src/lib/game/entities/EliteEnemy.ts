@@ -15,7 +15,7 @@ export class EliteEnemy {
   public isInFormation = false;
   
   // AI Decision System - Priority: Kill Player > Survival
-  private baseSpeed = 70; // Slow and smooth movement
+  private baseSpeed = 40; // Very slow movement
   private targetPriority = 10; // Max priority for player kill
   private lastHitTime = 0;
   private dodgeSuccessCount = 0;

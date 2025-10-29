@@ -16,7 +16,7 @@ export class Enemy {
   public health = 10; // New health system
   public commandedTarget: Vector2D | null = null; // Boss指令目标
   public speedMultiplier = 1.0; // 指令速度加成
-  private baseSpeed = 50; // Slow and smooth movement
+  private baseSpeed = 30; // Very slow movement
   private currentPattern: MovementPattern = { type: "aggressive", duration: 0 };
   private patternTimer = 0;
   private playerHistory: Vector2D[] = [];

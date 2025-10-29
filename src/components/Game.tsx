@@ -16,6 +16,7 @@ export const Game = () => {
   const [enemiesDestroyed, setEnemiesDestroyed] = useState(0);
   const [playerHealth, setPlayerHealth] = useState(100);
   const [autoAimMode, setAutoAimMode] = useState(false);
+  const [aiAutoPilot, setAiAutoPilot] = useState(false);
   const [defenderSlowPercent, setDefenderSlowPercent] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [aiLogs, setAiLogs] = useState<Array<{ timestamp: string; message: string; type: "info" | "success" | "warning" | "error" }>>([]);
@@ -67,6 +68,7 @@ export const Game = () => {
       if (engineRef.current) {
         const player = engineRef.current.getPlayer();
         setPlayerHealth(player.health);
+        setAiAutoPilot(player.aiAutoPilot);
       }
     }, 100);
 
@@ -147,6 +149,7 @@ export const Game = () => {
         gameOver={gameOver}
         onRestart={handleRestart}
         autoAimMode={autoAimMode}
+        aiAutoPilot={aiAutoPilot}
         defenderSlowPercent={defenderSlowPercent}
         highScore={highScore}
         playerHealth={playerHealth}

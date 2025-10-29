@@ -6,6 +6,7 @@ interface GameUIProps {
   gameOver: boolean;
   onRestart: () => void;
   autoAimMode: boolean;
+  aiAutoPilot?: boolean;
   defenderSlowPercent: number;
   highScore: number;
   playerHealth: number;
@@ -17,6 +18,7 @@ export const GameUI = ({
   gameOver, 
   onRestart, 
   autoAimMode,
+  aiAutoPilot = false,
   defenderSlowPercent,
   highScore,
   playerHealth,
@@ -39,6 +41,18 @@ export const GameUI = ({
         
         {/* Center HUD - Abilities and Status */}
         <div className="space-y-2">
+          
+          {/* AI Auto-pilot Status */}
+          <div className={`glass-effect rounded-2xl px-8 py-3 min-w-[220px] ${aiAutoPilot ? 'border border-green-500/50' : ''}`}>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider text-center mb-1">
+              AI完全托管 (按Q切换)
+            </div>
+            <div className="text-sm text-center font-mono" style={{ 
+              color: aiAutoPilot ? "hsl(142, 76%, 36%)" : "hsl(var(--muted-foreground))"
+            }}>
+              {aiAutoPilot ? "🤖 开启 (AI控制移动)" : "❌ 关闭"}
+            </div>
+          </div>
           
           {/* Auto-Aim Status */}
           <div className={`glass-effect rounded-2xl px-8 py-3 min-w-[220px] ${autoAimMode ? 'border border-primary/50' : ''}`}>
