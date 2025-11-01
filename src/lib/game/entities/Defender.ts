@@ -13,9 +13,9 @@ export class Defender {
   
   // Movement (orbital around player)
   private orbitAngle = Math.random() * Math.PI * 2;
-  private orbitSpeed = 0.04; // 50x enhanced: much faster orbital movement
+  private orbitSpeed = 0.001; // Slow orbital movement
   private orbitRadius = 400; // Distance from player
-  private baseSpeed = 200; // 50x enhanced: 4 * 50 = 200
+  private baseSpeed = 2.16; // 10% of player speed (21.6 * 0.1)
 
   constructor(position: Vector2D, radius: number) {
     this.id = Math.random().toString(36).substring(2, 15);

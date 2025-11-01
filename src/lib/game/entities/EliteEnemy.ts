@@ -25,13 +25,13 @@ export class EliteEnemy {
   private learningWeight = 0.99; // 50x enhanced: near-perfect learning
   private aggressiveness = 1.0; // 50x enhanced: maximum aggression
   
-  // Bullet prediction and extreme dodge system (50x enhanced)
-  private bulletPredictionRange = 20000; // 50x enhanced: screen-wide detection
-  private extremeDodgeSpeed = 2500; // 50x enhanced: instantaneous dodge
+  // Bullet prediction and dodge system
+  private bulletPredictionRange = 300; // Moderate detection range
+  private dodgeSpeed = 50; // Slow dodge speed
   private isDodgingBullet = false;
   private dodgeTimer = 0;
-  private bulletTrackingAccuracy = 0.95; // High tracking accuracy
-  private predictiveFrames = 2250; // 50x enhanced: predict far into future
+  private bulletTrackingAccuracy = 0.7; // Moderate tracking accuracy
+  private predictiveFrames = 30; // Moderate prediction
   
   // Advanced AI behaviors
   private missedShotCount = 0;
@@ -359,18 +359,18 @@ export class EliteEnemy {
       const dodgeDir = dodgeResult.dodgeDirection;
       const magnitude = Math.sqrt(dodgeDir.x ** 2 + dodgeDir.y ** 2);
       
-      // Extreme dodge speed with pattern variation
-      let dodgeSpeed = this.extremeDodgeSpeed;
+      // Dodge speed with pattern variation
+      let speed = this.dodgeSpeed;
       if (this.evasionPatternIndex === 1) {
         // Zigzag pattern
-        dodgeSpeed *= 1.1;
+        speed *= 1.1;
       } else if (this.evasionPatternIndex === 2) {
         // Burst pattern
-        dodgeSpeed *= 1.2;
+        speed *= 1.2;
       }
       
-      this.velocity.x = (dodgeDir.x / magnitude) * dodgeSpeed;
-      this.velocity.y = (dodgeDir.y / magnitude) * dodgeSpeed;
+      this.velocity.x = (dodgeDir.x / magnitude) * speed;
+      this.velocity.y = (dodgeDir.y / magnitude) * speed;
       
       // Multi-step dodge for extreme situations
       const steps = 2;

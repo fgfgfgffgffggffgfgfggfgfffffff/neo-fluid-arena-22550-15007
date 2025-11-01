@@ -11,12 +11,16 @@ export class DifficultyManager {
     accuracy: number; // 射击命中率
     survivalTime: number;
     avgReactionTime: number;
+    healthLost: number; // 战局内损失的生命值
+    totalDamage: number; // 总伤害承受量
   } = {
     kills: 0,
     deaths: 0,
     accuracy: 0,
     survivalTime: 0,
-    avgReactionTime: 0
+    avgReactionTime: 0,
+    healthLost: 0,
+    totalDamage: 0
   };
   
   private performanceHistory: Array<{
@@ -70,13 +74,27 @@ export class DifficultyManager {
   }
   
   /**
+   * 记录玩家受到伤害
+   */
+  public recordDamage(damage: number): void {
+    this.playerPerformance.totalDamage += damage;
+  }
+  
+  /**
+   * 记录玩家生命值损失（用于战局KD计算）
+   */
+  public recordHealthLoss(healthLost: number): void {
+    this.playerPerformance.healthLost += healthLost;
+  }
+  
+  /**
    * 动态调整难度
    */
   private updateDifficulty(): void {
     const { kills, deaths, accuracy } = this.playerPerformance;
     
-    // 计算KD比
-    const kdRatio = deaths === 0 ? kills : kills / deaths;
+    // 计算战局内KD（基于生命值比例 + 击杀数）
+    const sessionKD = this.getSessionKD();
     
     // 分析近期表现（最近5次）
     const recentPerformance = this.performanceHistory.slice(-5);
@@ -90,16 +108,16 @@ export class DifficultyManager {
     let targetDifficulty = 1.0;
     
     // 玩家表现很好 -> 增加难度
-    if (kdRatio > 3 && accuracy > 0.7) {
+    if (sessionKD > 3 && accuracy > 0.7) {
       targetDifficulty = 1.5;
-    } else if (kdRatio > 5) {
+    } else if (sessionKD > 5) {
       targetDifficulty = 2.0;
-    } else if (kdRatio > 8) {
+    } else if (sessionKD > 8) {
       targetDifficulty = 2.5;
     }
     
     // 玩家表现不好 -> 降低难度
-    if (kdRatio < 0.5) {
+    if (sessionKD < 0.5) {
       targetDifficulty = 0.7;
     } else if (recentDeaths >= 3) {
       targetDifficulty = 0.5;
@@ -111,6 +129,16 @@ export class DifficultyManager {
     const adjustSpeed = 0.1;
     this.currentDifficulty += (targetDifficulty - this.currentDifficulty) * adjustSpeed;
     this.currentDifficulty = Math.max(this.minDifficulty, Math.min(this.maxDifficulty, this.currentDifficulty));
+  }
+  
+  /**
+   * 获取战局内KD（基于生命值比例和击杀数）
+   */
+  public getSessionKD(): number {
+    // 战局KD = 击杀数 / (死亡次数 + 生命值损失比例)
+    const healthLossRatio = this.playerPerformance.healthLost / 100; // 假设最大生命100
+    const effectiveDeaths = this.playerPerformance.deaths + healthLossRatio;
+    return effectiveDeaths === 0 ? this.playerPerformance.kills : this.playerPerformance.kills / effectiveDeaths;
   }
   
   /**
@@ -152,9 +180,7 @@ export class DifficultyManager {
     difficulty: number;
     suggestion: string;
   } {
-    const kdRatio = this.playerPerformance.deaths === 0 
-      ? this.playerPerformance.kills 
-      : this.playerPerformance.kills / this.playerPerformance.deaths;
+    const kdRatio = this.getSessionKD();
     
     let suggestion = "";
     
@@ -187,7 +213,9 @@ export class DifficultyManager {
       deaths: 0,
       accuracy: 0,
       survivalTime: 0,
-      avgReactionTime: 0
+      avgReactionTime: 0,
+      healthLost: 0,
+      totalDamage: 0
     };
     this.performanceHistory = [];
     this.currentDifficulty = 1.0;

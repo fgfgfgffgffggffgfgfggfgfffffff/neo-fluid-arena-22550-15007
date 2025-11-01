@@ -13,6 +13,7 @@ import { DifficultyManager } from "./ai/DifficultyManager";
 import { PlayerAnalyzer } from "./ai/PlayerAnalyzer";
 import { GameReview } from "./ai/GameReview";
 import { CombatCoordinator } from "./ai/CombatCoordinator";
+import { GlobalStats } from "./GlobalStats";
 import { Vector2D } from "./types";
 
 interface GameCallbacks {
@@ -49,6 +50,13 @@ export class GameEngine {
   private maxAssassins = 0;
   private assassinSpawnTimer = 0;
   private assassinSpawnInterval = 8000;
+  
+  // Session statistics
+  private sessionStats = {
+    shotsFired: 0,
+    shotsHit: 0,
+    startHealth: 100
+  };
   
   // Formation debuff system
   private formationDebuffActive = false;
@@ -346,7 +354,7 @@ export class GameEngine {
     const shootPos = this.player.getShootPosition();
     let targetX: number, targetY: number;
 
-    // Auto-aim mode: target priority - assassin > boss > enemy
+    // Auto-aim mode: target priority - assassin > boss > enemy > defender
     if (this.player.autoAimMode) {
       let target: Vector2D | null = null;
 
@@ -389,6 +397,19 @@ export class GameEngine {
           }
         }
       }
+      // Priority 4: Defenders (only when all other enemies are cleared)
+      else if (this.defenders.length > 0) {
+        let minDist = Infinity;
+        for (const defender of this.defenders) {
+          const dist = Math.sqrt(
+            (defender.position.x - shootPos.x) ** 2 + (defender.position.y - shootPos.y) ** 2
+          );
+          if (dist < minDist) {
+            minDist = dist;
+            target = defender.position;
+          }
+        }
+      }
 
       if (target) {
         targetX = target.x;
@@ -416,8 +437,9 @@ export class GameEngine {
     (bullet as any).damage = this.player.autoAimMode ? 8 : 30; // 3x damage for fast kills
     this.bullets.push(bullet);
     
-    // Record shot for player analyzer
+    // Record shot for player analyzer and session stats
     this.playerAnalyzer.recordShot(false); // Will be updated to true if hit
+    this.sessionStats.shotsFired++;
 
     this.lastShotTime = now;
   }
@@ -479,6 +501,7 @@ export class GameEngine {
           }
           
           this.playerAnalyzer.recordShot(true); // Hit confirmed
+          this.sessionStats.shotsHit++;
           bulletHit = true;
           break;
         }
@@ -505,6 +528,7 @@ export class GameEngine {
           this.callbacks.onEnemyDestroyed();
           this.difficultyManager.recordKill();
           this.playerAnalyzer.recordShot(true);
+          this.sessionStats.shotsHit++;
           this.gameReview.recordEvent("kill", assassin.position, "Assassin eliminated");
           this.logAI(`Assassin killed! Respawning...`, "success");
           
@@ -532,6 +556,7 @@ export class GameEngine {
         // Only core of bullet counts for hit detection
         if (distance < bullet.radius * 0.6 + boss.radius) {
           const isDead = boss.takeDamage(damage);
+          this.sessionStats.shotsHit++;
           
           if (isDead) {
             this.createExplosion(boss.position, "hsl(0, 100%, 60%)");
@@ -592,12 +617,7 @@ export class GameEngine {
 
       if (distance < collisionDistance) {
         this.createExplosion(this.player.position, "hsl(200, 100%, 60%)");
-        this.gameOver = true;
-        this.callbacks.onGameOver();
-        this.stop();
-        this.difficultyManager.recordDeath();
-        this.gameReview.recordEvent("death", this.player.position, "Killed by Enemy collision");
-        this.logAI("💀 Game Over - Enemy collision!", "error");
+        this.handleGameOver("Enemy collision");
         return;
       }
     }
@@ -611,12 +631,7 @@ export class GameEngine {
 
       if (distance < collisionDistance) {
         this.createExplosion(this.player.position, "hsl(200, 100%, 60%)");
-        this.gameOver = true;
-        this.callbacks.onGameOver();
-        this.stop();
-        this.difficultyManager.recordDeath();
-        this.gameReview.recordEvent("death", this.player.position, "Killed by Assassin collision");
-        this.logAI("💀 Game Over - Assassin collision!", "error");
+        this.handleGameOver("Assassin collision");
         return;
       }
     }
@@ -629,8 +644,15 @@ export class GameEngine {
       const collisionDistance = this.player.radius + boss.radius;
 
       if (distance < collisionDistance) {
+        const previousHealth = this.player.health;
         // Boss deals 5 damage
         const playerDied = this.player.takeDamage(5);
+        const healthLost = previousHealth - this.player.health;
+        
+        if (healthLost > 0) {
+          this.difficultyManager.recordHealthLoss(healthLost);
+          this.difficultyManager.recordDamage(5);
+        }
         
         if (playerDied) {
           this.createExplosion(this.player.position, "hsl(200, 100%, 60%)");
@@ -647,12 +669,7 @@ export class GameEngine {
             );
           }
           
-          this.gameOver = true;
-          this.callbacks.onGameOver();
-          this.stop();
-          this.difficultyManager.recordDeath();
-          this.gameReview.recordEvent("death", this.player.position, "Killed by Boss collision");
-          this.logAI("💀 Game Over - Boss collision!", "error");
+          this.handleGameOver("Boss collision");
         } else {
           this.gameReview.recordEvent("damage_taken", this.player.position, `Took 5 damage from Boss`);
           this.logAI(`Player hit! Health: ${this.player.health}/${this.player.maxHealth}`, "warning");
@@ -664,6 +681,25 @@ export class GameEngine {
         return;
       }
     }
+  }
+  
+  private handleGameOver(reason: string) {
+    this.gameOver = true;
+    this.callbacks.onGameOver();
+    this.stop();
+    this.difficultyManager.recordDeath();
+    this.gameReview.recordEvent("death", this.player.position, `Killed by ${reason}`);
+    
+    // Save global statistics
+    GlobalStats.saveGameSession({
+      kills: this.difficultyManager.getPerformanceReport().kills,
+      deaths: 1, // Player died
+      shots: this.sessionStats.shotsFired,
+      hits: this.sessionStats.shotsHit,
+      score: this.score
+    });
+    
+    this.logAI(`💀 Game Over - ${reason}!`, "error");
   }
 
   private logAI(message: string, type: "info" | "success" | "warning" | "error" = "info") {
@@ -954,6 +990,16 @@ export class GameEngine {
   public restart() {
     this.stop();
     this.gameOver = false;
+    
+    // Save global statistics before reset
+    GlobalStats.saveGameSession({
+      kills: this.difficultyManager.getPerformanceReport().kills,
+      deaths: this.difficultyManager.getPerformanceReport().deaths,
+      shots: this.sessionStats.shotsFired,
+      hits: this.sessionStats.shotsHit,
+      score: this.score
+    });
+    
     this.score = 0;
     this.enemies = [];
     this.assassins = [];
@@ -973,6 +1019,11 @@ export class GameEngine {
     this.lastShotTime = 0;
     this.shootCooldown = this.baseShootCooldown;
     this.playerStatsUpdateTimer = 0;
+    this.sessionStats = {
+      shotsFired: 0,
+      shotsHit: 0,
+      startHealth: 100
+    };
     
     // Generate performance report before reset
     const performanceReport = this.difficultyManager.getPerformanceReport();
