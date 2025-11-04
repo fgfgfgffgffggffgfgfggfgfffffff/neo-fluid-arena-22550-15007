@@ -8,7 +8,7 @@ export class AssassinEnemy {
   public velocity: Vector2D = { x: 0, y: 0 };
   public radius: number;
   public health = 1; // Only 1 HP - dies instantly
-  private baseSpeed = 35; // Very slow movement
+  private baseSpeed = 18; // Very slow movement (reduced from 35)
   private orbitRadius = 200; // Orbit distance
   private orbitAngle = Math.random() * Math.PI * 2;
   private orbitSpeed = 0.0005; // Very slow orbit

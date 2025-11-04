@@ -23,20 +23,22 @@ export class Orbiter {
     this.angle += this.orbitSpeed;
     if (this.angle > Math.PI * 2) this.angle -= Math.PI * 2;
 
-    // Update shoot cooldown
+    // Update shoot cooldown (减去deltaTime而不是设置为0)
     if (this.shootCooldown > 0) {
       this.shootCooldown = Math.max(0, this.shootCooldown - deltaTime);
     }
 
-    // Auto-shoot at nearest enemy
-    if (this.shootCooldown === 0 && allEnemies.length > 0) {
+    // Auto-shoot at nearest enemy - 只有冷却为0时才射击
+    if (this.shootCooldown <= 0 && allEnemies && allEnemies.length > 0) {
       const position = this.getPosition(player);
       
-      // Find nearest enemy (any type)
+      // Find nearest enemy (any type) - 过滤掉undefined和无效的敌人
       let nearestEnemy: any = null;
       let nearestDistance = Infinity;
       
       for (const enemy of allEnemies) {
+        if (!enemy || !enemy.position) continue; // 跳过无效敌人
+        
         const dx = enemy.position.x - position.x;
         const dy = enemy.position.y - position.y;
         const distance = Math.sqrt(dx ** 2 + dy ** 2);
@@ -47,23 +49,25 @@ export class Orbiter {
         }
       }
 
-      if (nearestEnemy) {
+      if (nearestEnemy && nearestEnemy.position) {
         const dx = nearestEnemy.position.x - position.x;
         const dy = nearestEnemy.position.y - position.y;
         const distance = Math.sqrt(dx ** 2 + dy ** 2);
         
-        const direction = {
-          x: dx / distance,
-          y: dy / distance
-        };
+        if (distance > 0) { // 防止除以0
+          const direction = {
+            x: dx / distance,
+            y: dy / distance
+          };
 
-        this.shootCooldown = this.baseShootCooldown;
-        
-        // 小激光炮 - 更小的子弹
-        const bullet = new Bullet(position, direction, 1.5); // 小子弹半径1.5
-        (bullet as any).damage = 2; // 2点伤害
-        (bullet as any).color = "hsl(45, 100%, 60%)"; // 黄色激光
-        return bullet;
+          this.shootCooldown = this.baseShootCooldown; // 重置冷却
+          
+          // 小激光炮 - 更小的子弹
+          const bullet = new Bullet(position, direction, 1.5); // 小子弹半径1.5
+          (bullet as any).damage = 2; // 2点伤害
+          (bullet as any).color = "hsl(45, 100%, 60%)"; // 黄色激光
+          return bullet;
+        }
       }
     }
 

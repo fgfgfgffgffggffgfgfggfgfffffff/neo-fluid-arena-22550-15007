@@ -1011,6 +1011,9 @@ export class GameEngine {
     this.gameOver = false;
     this.score = 0;
     this.bossesKilledInWave = 0;
+    this.hasGameStarted = false; // Reset flag
+    this.gameStartTime = Date.now(); // Record start time
+    this.nextWaveScheduled = false; // Reset wave schedule
     this.player = new Player({ x: this.canvas.width / 2, y: this.canvas.height / 2 }, 3);
     this.bullets = [];
     this.particles = [];
@@ -1023,12 +1026,17 @@ export class GameEngine {
     this.enemySpawnTimer = 0;
     this.assassinSpawnTimer = 0;
     
-    // Spawn initial wave of 10 random enemies
-    for (let i = 0; i < this.waveSize; i++) {
-      this.spawnRandomEnemy();
-    }
+    this.logAI("🎮 游戏开始！敌人将在3秒后出现...", "success");
     
-    this.logAI("🎮 Game Started! Wave mode (随机10敌人: Boss 40%, 刺客30%, 普通30%)", "success");
+    // 开局3秒延迟后生成第一波敌人
+    setTimeout(() => {
+      this.hasGameStarted = true;
+      for (let i = 0; i < this.waveSize; i++) {
+        this.spawnRandomEnemy();
+      }
+      this.logAI("🌊 第一波敌人来袭！", "warning");
+    }, this.gameStartDelay);
+    
     this.animationId = requestAnimationFrame(this.gameLoop);
   }
 
@@ -1075,6 +1083,9 @@ export class GameEngine {
     this.lastShotTime = 0;
     this.shootCooldown = this.baseShootCooldown;
     this.playerStatsUpdateTimer = 0;
+    this.nextWaveScheduled = false; // Reset wave schedule
+    this.hasGameStarted = false; // Reset game started flag
+    this.aiCoachTipTimer = 0; // Reset AI coach timer
     this.sessionStats = {
       shotsFired: 0,
       shotsHit: 0,
