@@ -6,6 +6,7 @@ import { HealthDisplay } from "./HealthDisplay";
 import { AICoachButton } from "./AICoachButton";
 import { AIAnalysisPanel } from "./AIAnalysisPanel";
 import { TargetReticle } from "./TargetReticle";
+import { AICoachTip } from "./AICoachTip";
 
 export const Game = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,6 +40,11 @@ export const Game = () => {
       recommendations: [] as string[]
     }
   });
+  const [currentTip, setCurrentTip] = useState<{
+    message: string;
+    type: "positive" | "warning" | "info" | "critical";
+  } | null>(null);
+  const [lastTipTime, setLastTipTime] = useState(0);
 
   useEffect(() => {
     if (!gameStarted) return;
@@ -58,6 +64,13 @@ export const Game = () => {
       onAILog: (log) => setAiLogs(prev => [log, ...prev].slice(0, 100)),
       onPlayerStatsUpdate: setPlayerStats,
       onTargetUpdate: setTargetPosition,
+      onAICoachTip: (tip) => {
+        const now = Date.now();
+        if (now - lastTipTime >= 5000) { // 最少5秒间隔
+          setCurrentTip(tip);
+          setLastTipTime(now);
+        }
+      },
     });
 
     engineRef.current = engine;
@@ -141,6 +154,13 @@ export const Game = () => {
             performanceReport={aiReports.performance}
             behaviorReport={aiReports.behavior}
           />
+          {currentTip && (
+            <AICoachTip
+              message={currentTip.message}
+              type={currentTip.type}
+              onDismiss={() => setCurrentTip(null)}
+            />
+          )}
         </>
       )}
       <GameUI

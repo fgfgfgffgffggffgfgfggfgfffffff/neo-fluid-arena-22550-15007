@@ -96,27 +96,25 @@ export class Player {
   }
 
   public render(ctx: CanvasRenderingContext2D) {
-    // Render trail with smooth falloff
-    for (let i = 0; i < this.trail.length; i++) {
-      const alpha = 1 - (i / this.trail.length);
-      const radius = this.radius * (1 - (i / this.trail.length) * 0.6);
+    // Render trail with smooth falloff (减少拖尾长度)
+    for (let i = 0; i < Math.min(this.trail.length, 8); i++) {
+      const alpha = (1 - (i / 8)) * 0.3;
+      const radius = this.radius * (1 - (i / 8) * 0.5);
       
-      // Outer glow
       const gradient = ctx.createRadialGradient(
         this.trail[i].x,
         this.trail[i].y,
         0,
         this.trail[i].x,
         this.trail[i].y,
-        radius * 2.5
+        radius * 1.5
       );
-      gradient.addColorStop(0, `hsla(200, 100%, 65%, ${alpha * 0.4})`);
-      gradient.addColorStop(0.5, `hsla(200, 100%, 60%, ${alpha * 0.2})`);
+      gradient.addColorStop(0, `hsla(200, 100%, 65%, ${alpha})`);
       gradient.addColorStop(1, "transparent");
       
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(this.trail[i].x, this.trail[i].y, radius * 2.5, 0, Math.PI * 2);
+      ctx.arc(this.trail[i].x, this.trail[i].y, radius * 1.5, 0, Math.PI * 2);
       ctx.fill();
     }
 

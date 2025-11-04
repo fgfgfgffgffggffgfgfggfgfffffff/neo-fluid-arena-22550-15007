@@ -45,7 +45,7 @@ export const TargetReticle = ({ targetPosition, canvasOffset, playerPosition, is
             stroke={reticleColor}
             strokeWidth="1"
             strokeDasharray="8 8"
-            opacity="0.2"
+            opacity="0.15"
           />
         </svg>
       )}

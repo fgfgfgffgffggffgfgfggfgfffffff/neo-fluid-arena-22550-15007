@@ -25,6 +25,7 @@ interface GameCallbacks {
   onAILog: (log: { timestamp: string; message: string; type: "info" | "success" | "warning" | "error" }) => void;
   onPlayerStatsUpdate: (stats: { speed: number; position: Vector2D }) => void;
   onTargetUpdate: (target: Vector2D | null) => void;
+  onAICoachTip: (tip: { message: string; type: "positive" | "warning" | "info" | "critical" }) => void;
 }
 
 export class GameEngine {
@@ -80,6 +81,11 @@ export class GameEngine {
   private playerStatsUpdateTimer = 0;
   private nextWaveScheduled = false;
   private waveSize = 6;
+  private aiCoachTipTimer = 0;
+  private aiCoachTipInterval = 5000; // 每5秒一次AI提示
+  private gameStartDelay = 3000; // 开局3秒延迟
+  private gameStartTime = 0;
+  private hasGameStarted = false;
 
   constructor(canvas: HTMLCanvasElement, callbacks: GameCallbacks) {
     this.canvas = canvas;
@@ -616,8 +622,19 @@ export class GameEngine {
       const collisionDistance = this.player.radius + enemy.radius;
 
       if (distance < collisionDistance) {
-        this.createExplosion(this.player.position, "hsl(200, 100%, 60%)");
-        this.handleGameOver("Enemy collision");
+        const previousHealth = this.player.health;
+        const playerDied = this.player.takeDamage(10);
+        const healthLost = previousHealth - this.player.health;
+        
+        if (healthLost > 0) {
+          this.difficultyManager.recordHealthLoss(healthLost);
+          this.difficultyManager.recordDamage(10);
+        }
+        
+        if (playerDied) {
+          this.createExplosion(this.player.position, "hsl(200, 100%, 60%)");
+          this.handleGameOver("Enemy collision");
+        }
         return;
       }
     }
@@ -630,8 +647,19 @@ export class GameEngine {
       const collisionDistance = this.player.radius + assassin.radius;
 
       if (distance < collisionDistance) {
-        this.createExplosion(this.player.position, "hsl(200, 100%, 60%)");
-        this.handleGameOver("Assassin collision");
+        const previousHealth = this.player.health;
+        const playerDied = this.player.takeDamage(15);
+        const healthLost = previousHealth - this.player.health;
+        
+        if (healthLost > 0) {
+          this.difficultyManager.recordHealthLoss(healthLost);
+          this.difficultyManager.recordDamage(15);
+        }
+        
+        if (playerDied) {
+          this.createExplosion(this.player.position, "hsl(200, 100%, 60%)");
+          this.handleGameOver("Assassin collision");
+        }
         return;
       }
     }
@@ -706,6 +734,24 @@ export class GameEngine {
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     this.callbacks.onAILog({ timestamp, message, type });
+  }
+  
+  private generateAICoachTip() {
+    const report = this.difficultyManager.getPerformanceReport();
+    const behavior = this.playerAnalyzer.getBehaviorReport();
+    const enemyCount = this.enemies.length + this.assassins.length + this.bosses.length;
+    
+    if (this.player.health < 30) {
+      this.callbacks.onAICoachTip({ message: "⚠️ 生命值危险！建议保持距离，优先击杀近战敌人", type: "critical" });
+    } else if (enemyCount >= 5) {
+      this.callbacks.onAICoachTip({ message: "🎯 敌人数量较多，注意走位避免被包围", type: "warning" });
+    } else if (report.kdRatio > 3) {
+      this.callbacks.onAICoachTip({ message: "✨ 表现出色！继续保持这种节奏", type: "positive" });
+    } else if (behavior.accuracy < 40) {
+      this.callbacks.onAICoachTip({ message: "💡 命中率偏低，建议开启自动瞄准（A键）", type: "info" });
+    } else {
+      this.callbacks.onAICoachTip({ message: "👍 战术执行良好，保持专注", type: "positive" });
+    }
   }
 
   private createExplosion(position: Vector2D, color: string) {
@@ -835,20 +881,30 @@ export class GameEngine {
 
     // Wave-based spawning: spawn next wave 2s after clearing current
     const totalEnemies = this.enemies.length + this.assassins.length + this.bosses.length + this.defenders.length;
-    if (totalEnemies === 0 && !this.nextWaveScheduled) {
+    if (totalEnemies === 0 && !this.nextWaveScheduled && this.hasGameStarted) {
       this.nextWaveScheduled = true;
-      this.logAI("🌊 下一波将在2秒后出现（随机10个敌人）", "warning");
+      
+      // 清除所有防御者
+      this.defenders = [];
+      
+      this.logAI("🌊 下一波将在2秒后出现", "warning");
       setTimeout(() => {
         for (let i = 0; i < this.waveSize; i++) {
           this.spawnRandomEnemy();
         }
         this.nextWaveScheduled = false;
         
-        // 每波有30%概率生成1个Defender
         if (Math.random() < 0.3) {
           this.spawnDefender();
         }
       }, 2000);
+    }
+    
+    // AI教练每5秒提示
+    this.aiCoachTipTimer += deltaTime;
+    if (this.aiCoachTipTimer >= this.aiCoachTipInterval && this.hasGameStarted) {
+      this.generateAICoachTip();
+      this.aiCoachTipTimer = 0;
     }
 
     // Spawn assassins

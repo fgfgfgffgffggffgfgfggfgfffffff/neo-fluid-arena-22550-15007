@@ -32,7 +32,7 @@ export class DifficultyManager {
   
   private currentDifficulty = 1.0; // 1.0 = normal
   private minDifficulty = 0.3;
-  private maxDifficulty = 3.0;
+  private maxDifficulty = 100.0; // 最高可达100倍
   
   /**
    * 记录玩家击杀
@@ -107,13 +107,15 @@ export class DifficultyManager {
     // 难度调整逻辑
     let targetDifficulty = 1.0;
     
-    // 玩家表现很好 -> 增加难度
+    // 玩家表现很好 -> 增加难度（最高100倍）
     if (sessionKD > 3 && accuracy > 0.7) {
-      targetDifficulty = 1.5;
+      targetDifficulty = Math.min(100, this.currentDifficulty * 1.2);
     } else if (sessionKD > 5) {
-      targetDifficulty = 2.0;
+      targetDifficulty = Math.min(100, this.currentDifficulty * 1.5);
     } else if (sessionKD > 8) {
-      targetDifficulty = 2.5;
+      targetDifficulty = Math.min(100, this.currentDifficulty * 2);
+    } else if (sessionKD > 15) {
+      targetDifficulty = Math.min(100, this.currentDifficulty * 3);
     }
     
     // 玩家表现不好 -> 降低难度

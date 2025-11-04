@@ -56,7 +56,7 @@ export const AIAnalysisPanel = ({
         </CardHeader>
         
         <CardContent className="space-y-5 pt-4">
-          {/* Performance Metrics */}
+          {/* Performance Metrics - 不显示精准度和死亡次数 */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
@@ -67,30 +67,12 @@ export const AIAnalysisPanel = ({
                 <div className="text-xs text-muted-foreground mb-1">消灭敌人</div>
                 <div className="text-2xl font-bold text-primary">{performanceReport.kills}</div>
               </div>
-              <div className="p-3 rounded-lg bg-gradient-to-br from-destructive/10 to-destructive/5 border border-destructive/20 hover:border-destructive/40 transition-colors">
-                <div className="text-xs text-muted-foreground mb-1">死亡次数</div>
-                <div className="text-2xl font-bold text-destructive">{performanceReport.deaths}</div>
-              </div>
               <div className="p-3 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20 hover:border-green-500/40 transition-colors">
                 <div className="text-xs text-muted-foreground mb-1">K/D 比率</div>
                 <div className="text-2xl font-bold text-green-400">
                   {performanceReport.kdRatio.toFixed(2)}
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
-                <div className="text-xs text-muted-foreground mb-1">精准度</div>
-                <div className="text-2xl font-bold text-blue-400">
-                  {Math.round(performanceReport.accuracy * 100)}%
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">射击精准度</span>
-                <span className="text-primary font-semibold">{Math.round(performanceReport.accuracy * 100)}%</span>
-              </div>
-              <Progress value={performanceReport.accuracy * 100} className="h-2" />
             </div>
           </div>
 
@@ -147,13 +129,24 @@ export const AIAnalysisPanel = ({
             </div>
           )}
           
-          {/* Difficulty Info */}
+          {/* Enemy Strength Multiplier */}
           <div className="pt-2 border-t border-primary/10">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>当前难度系数</span>
-              <Badge variant="outline" className="font-mono">
-                {performanceReport.difficulty.toFixed(2)}x
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">敌人强度倍数</span>
+              <Badge 
+                variant="outline" 
+                className={`font-mono ${
+                  performanceReport.difficulty >= 50 ? 'border-red-500/50 text-red-400' :
+                  performanceReport.difficulty >= 20 ? 'border-orange-500/50 text-orange-400' :
+                  performanceReport.difficulty >= 5 ? 'border-yellow-500/50 text-yellow-400' :
+                  'border-green-500/50 text-green-400'
+                }`}
+              >
+                {performanceReport.difficulty.toFixed(1)}x
               </Badge>
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground text-center">
+              最高可达 100x
             </div>
           </div>
         </CardContent>

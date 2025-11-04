@@ -75,7 +75,7 @@ export class Defender {
     // Render subtle yellow targeting line when locked
     if (this.isLocked && this.lockTarget) {
       ctx.save();
-      ctx.strokeStyle = `hsla(60, 100%, 50%, 0.15)`;
+      ctx.strokeStyle = `hsla(60, 100%, 50%, 0.1)`;
       ctx.lineWidth = 1;
       ctx.setLineDash([8, 8]);
       ctx.beginPath();
