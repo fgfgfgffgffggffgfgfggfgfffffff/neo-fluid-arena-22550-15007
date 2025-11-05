@@ -68,6 +68,53 @@ All colors MUST be HSL.
     background-attachment: fixed;
     background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
   }
+  
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glassmorphism:hover {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+  }
+
+  @keyframes bounceIn {
+    0% {
+      transform: translate(-50%, -100%) scale(0.3);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(-50%, 10%) scale(1.1);
+    }
+    70% {
+      transform: translate(-50%, -5%) scale(0.9);
+    }
+    100% {
+      transform: translate(-50%, 0%) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translate(-50%, 0%) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translate(-50%, -20%) scale(0.8);
+    }
+  }
+
+  .animate-fade-out {
+    animation: fadeOut 0.5s ease-out forwards;
+  }
 }
 
 @layer utilities {

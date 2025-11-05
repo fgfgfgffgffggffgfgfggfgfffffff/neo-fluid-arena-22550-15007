@@ -32,11 +32,10 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
             <GameInstructions />
           </div>
           
-          <div className="flex flex-col sm:flex-row justify-center gap-4 animate-in fade-in duration-1000 delay-400">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 animate-in fade-in duration-1000 delay-400 w-full max-w-2xl mx-auto">
             <Button 
               size="lg" 
-              variant="outline"
-              className="text-lg px-8 py-6 bg-gradient-to-r from-primary/20 to-purple-500/20 hover:from-primary/30 hover:to-purple-500/30 border-primary/30 shadow-lg hover:shadow-primary/30 transition-all duration-300 font-semibold"
+              className="glassmorphism text-lg px-8 py-6 border-primary/30 shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all duration-300 font-semibold hover:scale-105 flex-1"
               onClick={() => setShowAICoach(true)}
             >
               <Brain className="mr-2 h-5 w-5 animate-pulse" />
@@ -45,7 +44,7 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
             
             <Button 
               size="lg" 
-              className="text-2xl px-16 py-8 bg-gradient-to-r from-red-600 via-red-500 to-red-600 hover:from-red-700 hover:via-red-600 hover:to-red-700 shadow-2xl hover:shadow-red-500/50 transition-all duration-300 font-bold"
+              className="glassmorphism text-lg px-8 py-6 border-red-500/30 shadow-lg hover:shadow-[0_0_30px_rgba(239,68,68,0.5)] transition-all duration-300 font-bold hover:scale-105 flex-1"
               onClick={onStart}
             >
               🚀 开始游戏

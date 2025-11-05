@@ -82,10 +82,15 @@ export class GameEngine {
   private nextWaveScheduled = false;
   private waveSize = 6;
   private aiCoachTipTimer = 0;
-  private aiCoachTipInterval = 5000; // 每5秒一次AI提示
+  private aiCoachTipInterval = 7000; // 7秒间隔 (5秒显示 + 2秒消失)
   private gameStartDelay = 3000; // 开局3秒延迟
   private gameStartTime = 0;
   private hasGameStarted = false;
+  private kills = 0;
+  private deaths = 0;
+  private shotsFired = 0;
+  private hits = 0;
+  private currentWave = 1;
 
   constructor(canvas: HTMLCanvasElement, callbacks: GameCallbacks) {
     this.canvas = canvas;
@@ -736,21 +741,56 @@ export class GameEngine {
     this.callbacks.onAILog({ timestamp, message, type });
   }
   
-  private generateAICoachTip() {
+  private async generateAICoachTip() {
+    if (!this.hasGameStarted) return;
+    
     const report = this.difficultyManager.getPerformanceReport();
     const behavior = this.playerAnalyzer.getBehaviorReport();
     const enemyCount = this.enemies.length + this.assassins.length + this.bosses.length;
     
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tactical-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        },
+        body: JSON.stringify({
+          gameState: {
+            health: this.player.health,
+            enemyCount,
+            kills: report.kills,
+            deaths: report.deaths,
+            accuracy: behavior.accuracy,
+            wave: this.currentWave,
+            difficultyMultiplier: report.difficulty
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        this.callbacks.onAICoachTip({ message: data.advice, type: data.type });
+      } else {
+        this.generateLocalTip(report, behavior, enemyCount);
+      }
+    } catch (error) {
+      console.error('AI tip failed:', error);
+      this.generateLocalTip(report, behavior, enemyCount);
+    }
+  }
+  
+  private generateLocalTip(report: any, behavior: any, enemyCount: number) {
     if (this.player.health < 30) {
-      this.callbacks.onAICoachTip({ message: "⚠️ 生命值危险！建议保持距离，优先击杀近战敌人", type: "critical" });
+      this.callbacks.onAICoachTip({ message: "⚠️ 生命危险！保持距离", type: "critical" });
     } else if (enemyCount >= 5) {
-      this.callbacks.onAICoachTip({ message: "🎯 敌人数量较多，注意走位避免被包围", type: "warning" });
+      this.callbacks.onAICoachTip({ message: "🎯 敌人过多，走位避包围", type: "warning" });
     } else if (report.kdRatio > 3) {
-      this.callbacks.onAICoachTip({ message: "✨ 表现出色！继续保持这种节奏", type: "positive" });
+      this.callbacks.onAICoachTip({ message: "✨ 出色！保持节奏", type: "positive" });
     } else if (behavior.accuracy < 40) {
-      this.callbacks.onAICoachTip({ message: "💡 命中率偏低，建议开启自动瞄准（A键）", type: "info" });
+      this.callbacks.onAICoachTip({ message: "💡 开启自动瞄准(A键)", type: "info" });
     } else {
-      this.callbacks.onAICoachTip({ message: "👍 战术执行良好，保持专注", type: "positive" });
+      this.callbacks.onAICoachTip({ message: "👍 保持专注", type: "positive" });
     }
   }
 

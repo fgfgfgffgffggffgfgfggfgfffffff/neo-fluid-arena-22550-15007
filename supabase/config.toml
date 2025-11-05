@@ -1,1 +1,4 @@
 project_id = "prywdmpzrimlkkkwqmhn"
+
+[functions.ai-tactical-analysis]
+verify_jwt = false

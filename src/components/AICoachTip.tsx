@@ -11,14 +11,14 @@ export const AICoachTip = ({ message, type, onDismiss }: AICoachTipProps) => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Slide in animation
+    // Q弹入场动画
     setTimeout(() => setVisible(true), 50);
     
-    // Auto dismiss after 4 seconds
+    // 2秒后自动消失
     const timer = setTimeout(() => {
       setVisible(false);
-      setTimeout(onDismiss, 300);
-    }, 4000);
+      setTimeout(onDismiss, 500);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [onDismiss]);
@@ -60,13 +60,13 @@ export const AICoachTip = ({ message, type, onDismiss }: AICoachTipProps) => {
 
   return (
     <div
-      className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 ${
-        visible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+      className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-50 ${
+        visible ? "animate-bounce-in" : "animate-fade-out"
       }`}
       style={{ maxWidth: "500px", width: "90%" }}
     >
       <div
-        className={`backdrop-blur-md ${styles.bg} ${styles.border} border rounded-2xl p-4 shadow-2xl ${styles.glow}`}
+        className={`glassmorphism ${styles.bg} ${styles.border} border-2 rounded-2xl p-4 shadow-2xl ${styles.glow}`}
       >
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 mt-0.5">

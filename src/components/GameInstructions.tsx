@@ -39,6 +39,10 @@ export const GameInstructions = () => {
                   <span className="text-primary font-bold mt-0.5">🤖</span>
                   <span><strong>按键A</strong> - AI模式（召唤2个轨道护卫，自动瞄准射击）</span>
                 </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-primary font-bold mt-0.5">📊</span>
+                  <span><strong>按键P</strong> - 切换AI战术分析面板，查看实时建议</span>
+                </li>
               </ul>
           </div>
           

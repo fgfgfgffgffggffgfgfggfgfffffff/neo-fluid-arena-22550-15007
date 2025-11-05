@@ -45,6 +45,7 @@ export const Game = () => {
     type: "positive" | "warning" | "info" | "critical";
   } | null>(null);
   const [lastTipTime, setLastTipTime] = useState(0);
+  const [showTipVisual, setShowTipVisual] = useState(false);
 
   useEffect(() => {
     if (!gameStarted) return;
@@ -66,9 +67,15 @@ export const Game = () => {
       onTargetUpdate: setTargetPosition,
       onAICoachTip: (tip) => {
         const now = Date.now();
-        if (now - lastTipTime >= 5000) { // 最少5秒间隔
+        if (now - lastTipTime >= 7000) { // 7秒间隔 (5秒显示 + 2秒消失)
           setCurrentTip(tip);
+          setShowTipVisual(true);
           setLastTipTime(now);
+          
+          // 2秒后消失
+          setTimeout(() => {
+            setShowTipVisual(false);
+          }, 2000);
         }
       },
     });
@@ -154,11 +161,14 @@ export const Game = () => {
             performanceReport={aiReports.performance}
             behaviorReport={aiReports.behavior}
           />
-          {currentTip && (
+          {currentTip && showTipVisual && (
             <AICoachTip
               message={currentTip.message}
               type={currentTip.type}
-              onDismiss={() => setCurrentTip(null)}
+              onDismiss={() => {
+                setCurrentTip(null);
+                setShowTipVisual(false);
+              }}
             />
           )}
         </>
