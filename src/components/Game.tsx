@@ -7,6 +7,8 @@ import { AICoachButton } from "./AICoachButton";
 import { AIAnalysisPanel } from "./AIAnalysisPanel";
 import { TargetReticle } from "./TargetReticle";
 import { AICoachTip } from "./AICoachTip";
+import { SkillsDisplay } from "./SkillsDisplay";
+import { Leaderboard } from "./Leaderboard";
 
 export const Game = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,6 +49,9 @@ export const Game = () => {
   const [lastTipTime, setLastTipTime] = useState(0);
   const [showTipVisual, setShowTipVisual] = useState(false);
 
+  const [skills, setSkills] = useState<any[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
   useEffect(() => {
     if (!gameStarted) return;
     
@@ -67,17 +72,17 @@ export const Game = () => {
       onTargetUpdate: setTargetPosition,
       onAICoachTip: (tip) => {
         const now = Date.now();
-        if (now - lastTipTime >= 7000) { // 7秒间隔 (5秒显示 + 2秒消失)
+        if (now - lastTipTime >= 7000) {
           setCurrentTip(tip);
           setShowTipVisual(true);
           setLastTipTime(now);
           
-          // 2秒后消失
           setTimeout(() => {
             setShowTipVisual(false);
           }, 2000);
         }
       },
+      onSkillsUpdate: setSkills,
     });
 
     engineRef.current = engine;
@@ -95,7 +100,11 @@ export const Game = () => {
     // Add P key listener for AI Coach
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'p' || e.key === 'P') {
-        handleShowAIAnalysis();
+        setShowAIAnalysis(prev => !prev);
+        if (!showAIAnalysis) handleShowAIAnalysis();
+      }
+      if (e.key === 'l' || e.key === 'L') {
+        setShowLeaderboard(prev => !prev);
       }
     };
     
@@ -122,20 +131,25 @@ export const Game = () => {
   };
   
   const handleShowAIAnalysis = () => {
-    // Get latest reports from engine
     if (engineRef.current) {
       const engine = engineRef.current as any;
       if (engine.difficultyManager && engine.playerAnalyzer) {
         const perfReport = engine.difficultyManager.getPerformanceReport();
         const behaviorReport = engine.playerAnalyzer.getBehaviorReport();
-        setAiReports({
-          performance: perfReport,
-          behavior: behaviorReport
-        });
+        setAiReports({ performance: perfReport, behavior: behaviorReport });
       }
     }
-    setShowAIAnalysis(true);
   };
+
+  const handleSkillClick = (skillId: string) => {
+    if (engineRef.current) (engineRef.current as any).useSkill(skillId);
+  };
+
+  const getCooldownPercent = (skillId: string) => 
+    engineRef.current ? (engineRef.current as any).getSkillCooldownPercent(skillId) : 0;
+
+  const getRemainingCooldown = (skillId: string) => 
+    engineRef.current ? (engineRef.current as any).getSkillRemainingCooldown(skillId) : 0;
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
@@ -155,6 +169,8 @@ export const Game = () => {
           />
           <HealthDisplay health={playerHealth} maxHealth={100} />
           <AICoachButton onClick={handleShowAIAnalysis} />
+          <SkillsDisplay skills={skills} getCooldownPercent={getCooldownPercent} getRemainingCooldown={getRemainingCooldown} onSkillClick={handleSkillClick} />
+          <Leaderboard visible={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
           <AIAnalysisPanel
             visible={showAIAnalysis}
             onClose={() => setShowAIAnalysis(false)}

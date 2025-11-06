@@ -14,7 +14,10 @@ import { PlayerAnalyzer } from "./ai/PlayerAnalyzer";
 import { GameReview } from "./ai/GameReview";
 import { CombatCoordinator } from "./ai/CombatCoordinator";
 import { GlobalStats } from "./GlobalStats";
+import { SkillManager } from "./Skills";
+import { SoundManager } from "./SoundManager";
 import { Vector2D } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GameCallbacks {
   onScoreUpdate: (score: number) => void;
@@ -26,6 +29,7 @@ interface GameCallbacks {
   onPlayerStatsUpdate: (stats: { speed: number; position: Vector2D }) => void;
   onTargetUpdate: (target: Vector2D | null) => void;
   onAICoachTip: (tip: { message: string; type: "positive" | "warning" | "info" | "critical" }) => void;
+  onSkillsUpdate: (skills: any[]) => void;
 }
 
 export class GameEngine {
@@ -43,6 +47,8 @@ export class GameEngine {
   private playerAnalyzer: PlayerAnalyzer = new PlayerAnalyzer();
   private gameReview: GameReview = new GameReview();
   private combatCoordinator: CombatCoordinator;
+  private skillManager: SkillManager = new SkillManager();
+  private soundManager: SoundManager = new SoundManager();
   private maxBosses = 6;
   private bossesKilledInWave = 0;
   private maxEnemies = 6;
@@ -98,6 +104,8 @@ export class GameEngine {
     this.callbacks = callbacks;
     
     this.combatCoordinator = new CombatCoordinator(canvas.width, canvas.height);
+    
+    this.callbacks.onSkillsUpdate(this.skillManager.getSkills());
 
     this.resize();
     window.addEventListener("resize", () => this.resize());
@@ -1091,11 +1099,36 @@ export class GameEngine {
     return this.player;
   }
 
+  public useSkill(skillId: string) {
+    if (this.skillManager.useSkill(skillId)) {
+      this.soundManager.playSkillActivate();
+      this.executeSkillEffect(skillId);
+    }
+  }
+
+  public getSkillCooldownPercent(skillId: string) {
+    return this.skillManager.getCooldownPercent(skillId);
+  }
+
+  public getSkillRemainingCooldown(skillId: string) {
+    return this.skillManager.getRemainingCooldown(skillId);
+  }
+
+  private executeSkillEffect(skillId: string) {
+    const player = this.player;
+    switch(skillId) {
+      case "shield": player.shield = Math.min(100, player.shield + 50); break;
+      case "timeSlow": this.enemies.forEach(e => e.speed *= 0.5); setTimeout(() => this.enemies.forEach(e => e.speed *= 2), 3000); break;
+      case "aoeBlast": [...this.enemies, ...this.assassins, ...this.bosses].forEach(e => { if (Math.hypot(e.position.x - player.position.x, e.position.y - player.position.y) < 200) { e.health -= 30; this.soundManager.playExplosion(); }}); break;
+      case "teleport": player.position = { x: this.canvas.width * Math.random(), y: this.canvas.height * Math.random() }; break;
+      case "heal": player.health = Math.min(player.maxHealth, player.health + 30); this.soundManager.playPowerUp(); break;
+    }
+  }
+
   public restart() {
     this.stop();
     this.gameOver = false;
     
-    // Save global statistics before reset
     GlobalStats.saveGameSession({
       kills: this.difficultyManager.getPerformanceReport().kills,
       deaths: this.difficultyManager.getPerformanceReport().deaths,
