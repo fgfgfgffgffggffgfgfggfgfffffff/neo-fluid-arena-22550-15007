@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Progress } from "./ui/progress";
+import { PlayerStatsChart } from "./PlayerStatsChart";
 
 interface AIAnalysisPanelProps {
   visible: boolean;
@@ -21,13 +22,21 @@ interface AIAnalysisPanelProps {
     playstyle: string;
     recommendations: string[];
   };
+  kills: number;
+  deaths: number;
+  score: number;
+  wave: number;
 }
 
 export const AIAnalysisPanel = ({
   visible,
   onClose,
   performanceReport,
-  behaviorReport
+  behaviorReport,
+  kills,
+  deaths,
+  score,
+  wave
 }: AIAnalysisPanelProps) => {
   return (
     <div
@@ -56,6 +65,14 @@ export const AIAnalysisPanel = ({
         </CardHeader>
         
         <CardContent className="space-y-5 pt-4">
+          {/* Stats Chart - 战斗数据可视化 */}
+          <PlayerStatsChart
+            kills={kills}
+            deaths={deaths}
+            accuracy={behaviorReport.accuracy}
+            score={score}
+            wave={wave}
+          />
           {/* Performance Metrics - 不显示精准度和死亡次数 */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">

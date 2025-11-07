@@ -158,22 +158,57 @@ export class PlayerAnalyzer {
     
     const recommendations: string[] = [];
     
-    // 根据行为模式给出建议
-    if (this.behaviorStats.movementPattern === "defensive" && this.behaviorStats.campingTendency > 0.7) {
-      recommendations.push("你倾向于防守，但长时间蹲守会被包围。建议适当移动。");
+    // 命中率分析（更细致）
+    if (accuracy < 30) {
+      recommendations.push("🎯 命中率过低(<30%)，强烈建议启用AI托管模式（按A键）自动瞄准");
+      recommendations.push("💡 瞄准技巧：提前量射击移动敌人，预判其移动轨迹");
+    } else if (accuracy < 50) {
+      recommendations.push("🎯 命中率偏低，建议练习跟随目标移动并平滑射击");
+    } else if (accuracy > 70) {
+      recommendations.push("🎯 神枪手！命中率优秀，继续保持精准射击");
     }
     
-    if (accuracy < 40) {
-      recommendations.push("命中率较低，建议开启自动瞄准（按A键）或练习跟踪移动目标。");
+    // 移动模式深度分析
+    if (this.behaviorStats.movementPattern === "defensive") {
+      if (this.behaviorStats.campingTendency > 0.7) {
+        recommendations.push("⚠️ 过度蹲守会被包围！建议采用「退后-射击-侧移」战术");
+        recommendations.push("💡 防守技巧：保持在屏幕边缘移动，利用空间优势");
+      } else {
+        recommendations.push("🛡️ 稳健的防守风格，适合应对高压力局面");
+      }
     }
     
-    if (this.behaviorStats.movementPattern === "aggressive" && accuracy > 60) {
-      recommendations.push("激进且准确的打法！继续保持这种节奏。");
+    if (this.behaviorStats.movementPattern === "aggressive") {
+      recommendations.push("⚔️ 激进风格！注意在敌人密集时使用技能保命");
+      if (accuracy > 60) {
+        recommendations.push("🌟 激进+精准是最强组合！你做得很好");
+      } else {
+        recommendations.push("💡 激进时更需要精准，尝试在接近时集中火力");
+      }
     }
     
-    if (this.behaviorStats.circlingTendency > 0.6) {
-      recommendations.push("你喜欢绕圈战斗，这是很好的策略。注意不要陷入敌人包围。");
+    if (this.behaviorStats.movementPattern === "evasive") {
+      recommendations.push("🌪️ 闪避型打法灵活性高，适合单挑Boss");
+      recommendations.push("💡 闪避技巧：Z字走位+小范围绕圈可最大化生存");
     }
+    
+    // 圆周运动分析
+    if (this.behaviorStats.circlingTendency > 0.7) {
+      recommendations.push("🔄 你擅长绕圈战斗，这对单体敌人很有效");
+      recommendations.push("⚠️ 面对多个敌人时注意后方威胁，避免被夹击");
+    }
+    
+    // 距离偏好建议
+    if (this.behaviorStats.preferredDistance < 150) {
+      recommendations.push("⚔️ 近战风格危险但有效，记得使用「护盾」和「治疗」技能");
+    } else if (this.behaviorStats.preferredDistance > 300) {
+      recommendations.push("🏹 远程风格较安全，但要注意刺客型敌人的突袭");
+    }
+    
+    // 技能使用建议
+    recommendations.push("🔥 技能连招推荐：「时间减速」→「范围爆炸」→「护盾」");
+    recommendations.push("💊 低血量(<30%)时立即使用「治疗」+「瞬移」逃生");
+    recommendations.push("🌊 新波次来临前使用「范围爆炸」清场");
     
     let playstyle = "";
     switch (this.behaviorStats.movementPattern) {
@@ -194,7 +229,7 @@ export class PlayerAnalyzer {
       accuracy: parseFloat(accuracy.toFixed(1)),
       movementPattern: this.behaviorStats.movementPattern,
       playstyle,
-      recommendations
+      recommendations: recommendations.slice(0, 8) // 最多显示8条建议
     };
   }
   

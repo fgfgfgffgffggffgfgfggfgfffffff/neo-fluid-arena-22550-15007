@@ -133,6 +133,7 @@ export const Game = () => {
       setGameOver(false);
       setScore(0);
       setEnemiesDestroyed(0);
+      setSkills([]); // 清空技能显示
     }
   };
   
@@ -169,7 +170,7 @@ export const Game = () => {
         className="w-full h-full"
         style={{ display: "block" }}
       />
-      {gameStarted && (
+      {gameStarted && !gameOver && (
         <>
           <TargetReticle
             targetPosition={targetPosition}
@@ -182,22 +183,15 @@ export const Game = () => {
           <SkillsDisplay skills={skills} getCooldownPercent={getCooldownPercent} getRemainingCooldown={getRemainingCooldown} onSkillClick={handleSkillClick} />
           <Leaderboard visible={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
           
-          {/* Stats Chart - positioned on right side */}
-          <div className="fixed top-4 right-4 z-40 max-w-sm">
-            <PlayerStatsChart
-              kills={kills}
-              deaths={deaths}
-              accuracy={aiReports.behavior.accuracy}
-              score={score}
-              wave={currentWave}
-            />
-          </div>
-          
           <AIAnalysisPanel
             visible={showAIAnalysis}
             onClose={() => setShowAIAnalysis(false)}
             performanceReport={aiReports.performance}
             behaviorReport={aiReports.behavior}
+            kills={kills}
+            deaths={deaths}
+            score={score}
+            wave={currentWave}
           />
           {currentTip && showTipVisual && (
             <AICoachTip
