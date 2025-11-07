@@ -23,27 +23,51 @@ export const GameInstructions = () => {
           <div className="space-y-6">
             {/* 基础操作 */}
             <div className="space-y-3">
-              <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                <span className="text-2xl">🎮</span> 基础操作
-              </h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold mt-0.5">🖱️</span>
-                  <span><strong>鼠标移动</strong> - 控制玩家移动方向</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold mt-0.5">🎯</span>
-                  <span><strong>鼠标点击</strong> - 快速射击</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold mt-0.5">🤖</span>
-                  <span><strong>按键A</strong> - AI模式（召唤2个轨道护卫，自动瞄准射击）</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold mt-0.5">📊</span>
-                  <span><strong>按键P</strong> - 切换AI战术分析面板，查看实时建议</span>
-                </li>
-              </ul>
+            <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <span className="text-2xl">🎮</span> 基础操作
+            </h3>
+            <ul className="space-y-2 text-muted-foreground">
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">🖱️</span>
+                <span><strong>鼠标移动</strong> - 控制玩家移动方向</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">🎯</span>
+                <span><strong>鼠标点击</strong> - 快速射击</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">🤖</span>
+                <span><strong>按键A</strong> - AI托管模式（召唤2个轨道护卫，自动瞄准射击，自动使用技能）</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">🛡️</span>
+                <span><strong>按键1</strong> - 护盾技能（+50护盾值，冷却15秒）</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">⏱️</span>
+                <span><strong>按键2</strong> - 时间减速（减慢敌人70%速度持续3秒，冷却20秒）</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">💥</span>
+                <span><strong>按键3</strong> - 范围爆炸（对250范围内敌人造成30伤害，冷却12秒）</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">⚡</span>
+                <span><strong>按键4</strong> - 瞬移（随机传送到安全位置，冷却10秒）</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">❤️</span>
+                <span><strong>按键5</strong> - 治疗（恢复30生命值，冷却25秒）</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">📊</span>
+                <span><strong>按键P</strong> - 切换AI战术分析面板，查看实时建议</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary font-bold mt-0.5">🏆</span>
+                <span><strong>按键L</strong> - 切换全域排行榜</span>
+              </li>
+            </ul>
           </div>
           
           {/* 玩法更新 */}

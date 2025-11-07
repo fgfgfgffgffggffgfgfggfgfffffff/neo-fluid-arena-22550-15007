@@ -97,6 +97,9 @@ export class GameEngine {
   private shotsFired = 0;
   private hits = 0;
   private currentWave = 1;
+  private aiSkillAutoUseEnabled = false;
+  private aiSkillCheckTimer = 0;
+  private aiSkillCheckInterval = 500; // 每500ms检查一次技能使用
 
   constructor(canvas: HTMLCanvasElement, callbacks: GameCallbacks) {
     this.canvas = canvas;
@@ -370,6 +373,7 @@ export class GameEngine {
     const adjustedCooldown = this.shootCooldown / this.formationDebuffMultiplier;
     if (now - this.lastShotTime < adjustedCooldown) return;
 
+    this.soundManager.playShoot(); // Shoot sound
     const shootPos = this.player.getShootPosition();
     let targetX: number, targetY: number;
 
@@ -508,8 +512,10 @@ export class GameEngine {
 
         if (distance < bullet.radius * 0.6 + enemy.radius) {
           enemy.health -= damage;
+          this.soundManager.playHit(); // Hit sound
           
           if (enemy.health <= 0) {
+            this.soundManager.playExplosion(); // Explosion sound
             this.createExplosion(enemy.position, "hsl(280, 100%, 60%)");
             this.enemies.splice(j, 1);
             this.score += 10;
@@ -540,6 +546,8 @@ export class GameEngine {
         const distance = Math.sqrt(dx ** 2 + dy ** 2);
 
         if (distance < bullet.radius * 0.6 + assassin.radius) {
+          this.soundManager.playHit(); // Hit sound
+          this.soundManager.playExplosion(); // Explosion sound
           this.createExplosion(assassin.position, "hsl(45, 100%, 60%)");
           this.assassins.splice(j, 1);
           this.score += 25;
@@ -574,10 +582,12 @@ export class GameEngine {
 
         // Only core of bullet counts for hit detection
         if (distance < bullet.radius * 0.6 + boss.radius) {
+          this.soundManager.playHit(); // Hit sound
           const isDead = boss.takeDamage(damage);
           this.sessionStats.shotsHit++;
           
           if (isDead) {
+            this.soundManager.playExplosion(); // Explosion sound
             this.createExplosion(boss.position, "hsl(0, 100%, 60%)");
             for (let k = 0; k < 30; k++) {
               const angle = Math.random() * Math.PI * 2;
@@ -608,6 +618,8 @@ export class GameEngine {
             // Spawn new wave when all 6 bosses killed
             if (this.bossesKilledInWave >= 6 && this.bosses.length === 0) {
               this.bossesKilledInWave = 0;
+              this.currentWave++;
+              this.soundManager.playWaveComplete(); // Wave complete sound
               this.logAI("🌊 New wave incoming!", "warning");
               setTimeout(() => {
                 for (let i = 0; i < 6; i++) {
@@ -640,6 +652,7 @@ export class GameEngine {
         const healthLost = previousHealth - this.player.health;
         
         if (healthLost > 0) {
+          this.soundManager.playDamage(); // Damage sound
           this.difficultyManager.recordHealthLoss(healthLost);
           this.difficultyManager.recordDamage(10);
         }
@@ -665,6 +678,7 @@ export class GameEngine {
         const healthLost = previousHealth - this.player.health;
         
         if (healthLost > 0) {
+          this.soundManager.playDamage(); // Damage sound
           this.difficultyManager.recordHealthLoss(healthLost);
           this.difficultyManager.recordDamage(15);
         }
@@ -691,6 +705,7 @@ export class GameEngine {
         const healthLost = previousHealth - this.player.health;
         
         if (healthLost > 0) {
+          this.soundManager.playDamage(); // Damage sound
           this.difficultyManager.recordHealthLoss(healthLost);
           this.difficultyManager.recordDamage(5);
         }
@@ -838,6 +853,15 @@ export class GameEngine {
       this.player.update(aiTarget, deltaTime, this.canvas);
     } else {
       this.player.update(this.mousePosition, deltaTime, this.canvas);
+    }
+    
+    // AI skill auto-use logic
+    if (this.aiSkillAutoUseEnabled) {
+      this.aiSkillCheckTimer += deltaTime;
+      if (this.aiSkillCheckTimer >= this.aiSkillCheckInterval) {
+        this.aiSkillCheckTimer = 0;
+        this.checkAndUseSkills();
+      }
     }
     
     // Record player position for analysis
@@ -1116,13 +1140,114 @@ export class GameEngine {
 
   private executeSkillEffect(skillId: string) {
     const player = this.player;
+    const allEnemies = [...this.enemies, ...this.assassins, ...this.bosses];
+    
     switch(skillId) {
-      case "shield": player.shield = Math.min(100, player.shield + 50); break;
-      case "timeSlow": this.enemies.forEach(e => e.speed *= 0.5); setTimeout(() => this.enemies.forEach(e => e.speed *= 2), 3000); break;
-      case "aoeBlast": [...this.enemies, ...this.assassins, ...this.bosses].forEach(e => { if (Math.hypot(e.position.x - player.position.x, e.position.y - player.position.y) < 200) { e.health -= 30; this.soundManager.playExplosion(); }}); break;
-      case "teleport": player.position = { x: this.canvas.width * Math.random(), y: this.canvas.height * Math.random() }; break;
-      case "heal": player.health = Math.min(player.maxHealth, player.health + 30); this.soundManager.playPowerUp(); break;
+      case "shield": 
+        player.shield = Math.min(100, player.shield + 50); 
+        this.createSkillParticles(player.position, 'shield');
+        break;
+        
+      case "timeSlow": 
+        this.enemies.forEach(e => e.speedMultiplier *= 0.3);
+        this.createSkillParticles(player.position, 'timeSlow');
+        setTimeout(() => {
+          this.enemies.forEach(e => e.speedMultiplier /= 0.3);
+        }, 3000);
+        break;
+        
+      case "aoeBlast": 
+        allEnemies.forEach(e => {
+          const dist = Math.hypot(e.position.x - player.position.x, e.position.y - player.position.y);
+          if (dist < 250) {
+            e.health -= 30;
+            this.soundManager.playExplosion();
+            this.createExplosionEffect(e.position);
+          }
+        });
+        break;
+        
+      case "teleport": 
+        const newPos = {
+          x: 100 + Math.random() * (this.canvas.width - 200),
+          y: 100 + Math.random() * (this.canvas.height - 200)
+        };
+        this.createSkillParticles(player.position, 'teleport');
+        player.position = newPos;
+        this.createSkillParticles(newPos, 'teleport');
+        break;
+        
+      case "heal": 
+        player.health = Math.min(player.maxHealth, player.health + 30); 
+        this.soundManager.playPowerUp();
+        this.createSkillParticles(player.position, 'heal');
+        break;
     }
+  }
+
+  private createSkillParticles(position: Vector2D, skillType: string) {
+    const colors: Record<string, string> = {
+      shield: 'hsl(220, 80%, 60%)',
+      timeSlow: 'hsl(280, 80%, 60%)',
+      aoeBlast: 'hsl(0, 80%, 60%)',
+      teleport: 'hsl(180, 80%, 60%)',
+      heal: 'hsl(140, 80%, 60%)'
+    };
+    
+    for (let i = 0; i < 20; i++) {
+      const angle = (Math.PI * 2 * i) / 20;
+      const speed = 2 + Math.random() * 3;
+      this.particles.push(new Particle(
+        { ...position },
+        { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed },
+        5 + Math.random() * 3,
+        colors[skillType] || 'hsl(0, 0%, 100%)'
+      ));
+    }
+  }
+
+  private createExplosionEffect(position: Vector2D) {
+    for (let i = 0; i < 30; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 3 + Math.random() * 5;
+      this.particles.push(new Particle(
+        { ...position },
+        { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed },
+        4 + Math.random() * 4,
+        Math.random() > 0.5 ? 'hsl(0, 90%, 60%)' : 'hsl(30, 100%, 60%)'
+      ));
+    }
+  }
+
+  private enableAISkillAutoUse() {
+    this.aiSkillAutoUseEnabled = true;
+  }
+
+  private disableAISkillAutoUse() {
+    this.aiSkillAutoUseEnabled = false;
+  }
+
+  private checkAndUseSkills() {
+    const allEnemies = [...this.enemies, ...this.assassins, ...this.bosses];
+    const nearbyEnemies = allEnemies.filter(e => 
+      Math.hypot(e.position.x - this.player.position.x, e.position.y - this.player.position.y) < 200
+    );
+
+    const gameState = {
+      playerHealth: this.player.health,
+      enemyCount: allEnemies.length,
+      nearbyEnemies: nearbyEnemies.length
+    };
+
+    const usedSkills = this.skillManager.autoUseSkills(gameState);
+    usedSkills.forEach(skillId => {
+      this.soundManager.playSkillActivate();
+      this.executeSkillEffect(skillId);
+      this.callbacks.onAICoachTip?.({ 
+        message: `AI自动使用技能: ${this.skillManager.getSkill(skillId)?.name}`, 
+        type: "positive" 
+      });
+    });
   }
 
   public restart() {
@@ -1143,6 +1268,8 @@ export class GameEngine {
     this.bosses = [];
     this.defenders = [];
     this.orbiters = [];
+    this.bullets = [];
+    this.particles = [];
     this.commandSystem = new CommandSystem();
     this.teamCoordinator = new TeamCoordinator();
     this.difficultyManager.reset();

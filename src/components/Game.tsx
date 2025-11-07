@@ -9,6 +9,7 @@ import { TargetReticle } from "./TargetReticle";
 import { AICoachTip } from "./AICoachTip";
 import { SkillsDisplay } from "./SkillsDisplay";
 import { Leaderboard } from "./Leaderboard";
+import { PlayerStatsChart } from "./PlayerStatsChart";
 
 export const Game = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -51,6 +52,9 @@ export const Game = () => {
 
   const [skills, setSkills] = useState<any[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [currentWave, setCurrentWave] = useState(1);
+  const [kills, setKills] = useState(0);
+  const [deaths, setDeaths] = useState(0);
 
   useEffect(() => {
     if (!gameStarted) return;
@@ -63,8 +67,14 @@ export const Game = () => {
         setScore(newScore);
         setHighScore(prev => Math.max(prev, newScore));
       },
-      onGameOver: () => setGameOver(true),
-      onEnemyDestroyed: () => setEnemiesDestroyed(prev => prev + 1),
+      onGameOver: () => {
+        setGameOver(true);
+        setDeaths(prev => prev + 1);
+      },
+      onEnemyDestroyed: () => {
+        setEnemiesDestroyed(prev => prev + 1);
+        setKills(prev => prev + 1);
+      },
       onAutoAimChange: setAutoAimMode,
       onDefenderSlowChange: setDefenderSlowPercent,
       onAILog: (log) => setAiLogs(prev => [log, ...prev].slice(0, 100)),
@@ -171,6 +181,18 @@ export const Game = () => {
           <AICoachButton onClick={handleShowAIAnalysis} />
           <SkillsDisplay skills={skills} getCooldownPercent={getCooldownPercent} getRemainingCooldown={getRemainingCooldown} onSkillClick={handleSkillClick} />
           <Leaderboard visible={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
+          
+          {/* Stats Chart - positioned on right side */}
+          <div className="fixed top-4 right-4 z-40 max-w-sm">
+            <PlayerStatsChart
+              kills={kills}
+              deaths={deaths}
+              accuracy={aiReports.behavior.accuracy}
+              score={score}
+              wave={currentWave}
+            />
+          </div>
+          
           <AIAnalysisPanel
             visible={showAIAnalysis}
             onClose={() => setShowAIAnalysis(false)}
