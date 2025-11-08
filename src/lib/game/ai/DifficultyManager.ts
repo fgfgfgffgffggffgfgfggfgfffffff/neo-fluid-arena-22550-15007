@@ -32,7 +32,7 @@ export class DifficultyManager {
   
   private currentDifficulty = 1.0; // 1.0 = normal
   private minDifficulty = 0.3;
-  private maxDifficulty = 100.0; // 最高可达100倍
+  private maxDifficulty = 200.0; // 最高可达200倍
   
   /**
    * 记录玩家击杀
@@ -107,15 +107,17 @@ export class DifficultyManager {
     // 难度调整逻辑
     let targetDifficulty = 1.0;
     
-    // 玩家表现很好 -> 增加难度（最高100倍）
+    // 玩家表现很好 -> 增加难度（最高200倍）
     if (sessionKD > 3 && accuracy > 0.7) {
-      targetDifficulty = Math.min(100, this.currentDifficulty * 1.2);
+      targetDifficulty = Math.min(200, this.currentDifficulty * 1.2);
     } else if (sessionKD > 5) {
-      targetDifficulty = Math.min(100, this.currentDifficulty * 1.5);
+      targetDifficulty = Math.min(200, this.currentDifficulty * 1.5);
     } else if (sessionKD > 8) {
-      targetDifficulty = Math.min(100, this.currentDifficulty * 2);
+      targetDifficulty = Math.min(200, this.currentDifficulty * 2);
     } else if (sessionKD > 15) {
-      targetDifficulty = Math.min(100, this.currentDifficulty * 3);
+      targetDifficulty = Math.min(200, this.currentDifficulty * 3);
+    } else if (sessionKD > 25) {
+      targetDifficulty = Math.min(200, this.currentDifficulty * 4);
     }
     
     // 玩家表现不好 -> 降低难度
@@ -158,10 +160,10 @@ export class DifficultyManager {
   }
   
   /**
-   * 获取难度建议的敌人速度倍率
+   * 获取难度建议的敌人速度倍率 (限制为缓慢移动)
    */
   public getSpeedMultiplier(): number {
-    return 0.8 + (this.currentDifficulty * 0.4); // 0.8x to 2.0x
+    return 0.3 + (Math.min(this.currentDifficulty, 5) * 0.1); // 0.3x to 0.8x (缓慢移动)
   }
   
   /**

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Brain, Target, TrendingUp, AlertTriangle, Shield, Activity } from "lucide-react";
 import { GlobalStats } from "@/lib/game/GlobalStats";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
 interface AICoachModalProps {
   open: boolean;
@@ -15,9 +16,25 @@ export const AICoachModal = ({ open, onClose }: AICoachModalProps) => {
   const globalAccuracy = GlobalStats.getGlobalAccuracy();
   const avgScore = GlobalStats.getAverageScore();
 
+  // 饼图数据
+  const performanceData = [
+    { name: '击杀', value: stats.kills, color: '#10b981' },
+    { name: '死亡', value: stats.deaths, color: '#ef4444' },
+    { name: '存活波次', value: Math.max(stats.gamesPlayed * 5, 0), color: '#3b82f6' },
+  ];
+
+  // 雷达图数据
+  const skillData = [
+    { skill: '精准度', value: globalAccuracy, fullMark: 100 },
+    { skill: 'K/D比', value: Math.min(globalKD * 10, 100), fullMark: 100 },
+    { skill: '生存力', value: Math.min((stats.kills / Math.max(stats.deaths, 1)) * 15, 100), fullMark: 100 },
+    { skill: '战术性', value: Math.min(stats.gamesPlayed * 5, 100), fullMark: 100 },
+    { skill: '适应性', value: Math.min(avgScore / 100, 100), fullMark: 100 },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background/98 backdrop-blur-md border-primary/30">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto liquid-glass border-primary/30">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-2xl">
             <Brain className="h-7 w-7 text-primary animate-pulse" />
@@ -28,29 +45,71 @@ export const AICoachModal = ({ open, onClose }: AICoachModalProps) => {
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Global Stats */}
-          <Card className="border-primary/20">
+          {/* Visual Analytics */}
+          <Card className="liquid-glass border-primary/20">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Target className="h-5 w-5 text-primary" />
-                全局统计数据
+                战斗数据可视化分析
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 饼图 */}
+                <div className="liquid-glass p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold mb-3 text-center text-primary">战斗结果分布</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={performanceData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {performanceData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* 雷达图 */}
+                <div className="liquid-glass p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold mb-3 text-center text-primary">综合能力雷达</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={skillData}>
+                      <PolarGrid stroke="#3b82f6" strokeOpacity={0.3} />
+                      <PolarAngleAxis dataKey="skill" tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9ca3af' }} />
+                      <Radar name="能力值" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                      <Tooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="p-4 rounded-lg liquid-glass bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
                   <div className="text-xs text-muted-foreground mb-1">全局 K/D</div>
                   <div className="text-2xl font-bold text-green-400">{globalKD.toFixed(2)}</div>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                <div className="p-4 rounded-lg liquid-glass bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
                   <div className="text-xs text-muted-foreground mb-1">平均精准度</div>
                   <div className="text-2xl font-bold text-blue-400">{globalAccuracy.toFixed(1)}%</div>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border border-yellow-500/20">
+                <div className="p-4 rounded-lg liquid-glass bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 border border-yellow-500/20">
                   <div className="text-xs text-muted-foreground mb-1">最高分数</div>
                   <div className="text-2xl font-bold text-yellow-400">{stats.bestScore}</div>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
+                <div className="p-4 rounded-lg liquid-glass bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
                   <div className="text-xs text-muted-foreground mb-1">游戏局数</div>
                   <div className="text-2xl font-bold text-purple-400">{stats.gamesPlayed}</div>
                 </div>

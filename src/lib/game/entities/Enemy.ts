@@ -145,29 +145,9 @@ export class Enemy {
   }
   
   private activateDodgeAbility(bullet: Bullet) {
-    // Teleport perpendicular to bullet direction
-    const bulletDir = bullet.direction;
-    const perpendicular = {
-      x: -bulletDir.y,
-      y: bulletDir.x,
-    };
-    
-    // Choose random side
-    const side = Math.random() > 0.5 ? 1 : -1;
-    const dodgeDistance = 120;
-    
-    this.dodgeStartPos = { ...this.position };
-    this.position.x += perpendicular.x * dodgeDistance * side;
-    this.position.y += perpendicular.y * dodgeDistance * side;
-    this.isDodging = true;
-    
-    console.log(`⚡ AI ${this.id.substring(0, 6)} DODGED! Cooldown: 5s`);
-    
-    // Visual effect timeout
-    setTimeout(() => {
-      this.isDodging = false;
-      this.dodgeStartPos = null;
-    }, 200);
+    // 闪现功能已禁用 - 敌人只能缓慢移动
+    // 不再执行瞬移操作
+    this.isDodging = false;
   }
   
   public checkShieldHit(bullet: Bullet): boolean {

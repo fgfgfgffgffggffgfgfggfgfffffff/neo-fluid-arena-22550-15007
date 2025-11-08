@@ -7,8 +7,6 @@ import { AICoachButton } from "./AICoachButton";
 import { AIAnalysisPanel } from "./AIAnalysisPanel";
 import { TargetReticle } from "./TargetReticle";
 import { AICoachTip } from "./AICoachTip";
-import { SkillsDisplay } from "./SkillsDisplay";
-import { Leaderboard } from "./Leaderboard";
 import { PlayerStatsChart } from "./PlayerStatsChart";
 
 export const Game = () => {
@@ -51,7 +49,6 @@ export const Game = () => {
   const [showTipVisual, setShowTipVisual] = useState(false);
 
   const [skills, setSkills] = useState<any[]>([]);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [currentWave, setCurrentWave] = useState(1);
   const [kills, setKills] = useState(0);
   const [deaths, setDeaths] = useState(0);
@@ -80,6 +77,7 @@ export const Game = () => {
       onAILog: (log) => setAiLogs(prev => [log, ...prev].slice(0, 100)),
       onPlayerStatsUpdate: setPlayerStats,
       onTargetUpdate: setTargetPosition,
+      onSkillsUpdate: () => {}, // 技能系统已删除
       onAICoachTip: (tip) => {
         const now = Date.now();
         if (now - lastTipTime >= 7000) {
@@ -92,7 +90,6 @@ export const Game = () => {
           }, 2000);
         }
       },
-      onSkillsUpdate: setSkills,
     });
 
     engineRef.current = engine;
@@ -113,9 +110,6 @@ export const Game = () => {
         setShowAIAnalysis(prev => !prev);
         if (!showAIAnalysis) handleShowAIAnalysis();
       }
-      if (e.key === 'l' || e.key === 'L') {
-        setShowLeaderboard(prev => !prev);
-      }
     };
     
     window.addEventListener('keydown', handleKeyPress);
@@ -133,7 +127,6 @@ export const Game = () => {
       setGameOver(false);
       setScore(0);
       setEnemiesDestroyed(0);
-      setSkills([]); // 清空技能显示
     }
   };
   
@@ -151,16 +144,6 @@ export const Game = () => {
       }
     }
   };
-
-  const handleSkillClick = (skillId: string) => {
-    if (engineRef.current) (engineRef.current as any).useSkill(skillId);
-  };
-
-  const getCooldownPercent = (skillId: string) => 
-    engineRef.current ? (engineRef.current as any).getSkillCooldownPercent(skillId) : 0;
-
-  const getRemainingCooldown = (skillId: string) => 
-    engineRef.current ? (engineRef.current as any).getSkillRemainingCooldown(skillId) : 0;
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
@@ -180,8 +163,6 @@ export const Game = () => {
           />
           <HealthDisplay health={playerHealth} maxHealth={100} />
           <AICoachButton onClick={handleShowAIAnalysis} />
-          <SkillsDisplay skills={skills} getCooldownPercent={getCooldownPercent} getRemainingCooldown={getRemainingCooldown} onSkillClick={handleSkillClick} />
-          <Leaderboard visible={showLeaderboard} onClose={() => setShowLeaderboard(false)} />
           
           <AIAnalysisPanel
             visible={showAIAnalysis}

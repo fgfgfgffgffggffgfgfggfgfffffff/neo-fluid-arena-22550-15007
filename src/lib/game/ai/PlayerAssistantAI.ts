@@ -119,7 +119,7 @@ export class PlayerAssistantAI {
   }
   
   /**
-   * 更新辅助 AI 状态
+   * 更新辅助 AI 状态（改进的自瞄系统）
    */
   public update(
     player: Player,
@@ -133,64 +133,111 @@ export class PlayerAssistantAI {
   } {
     const now = Date.now();
     
-    // 规则1: 玩家停止射击≥2秒时，主动骚扰射击
-    if (!playerShooting) {
-      this.lastPlayerShootTime = now;
-    }
-    const timeSinceLastShot = now - this.lastPlayerShootTime;
+    // 选择目标
+    let targetEnemy = this.selectTarget(player, enemies);
     
-    // 规则7: 玩家血量<20%时，切换高爆发模式
+    if (!targetEnemy) {
+      return { shouldShoot: false, targetEnemy: null, mode: "normal" };
+    }
+
+    // 计算到目标的距离和角度
+    const dx = targetEnemy.position.x - player.position.x;
+    const dy = targetEnemy.position.y - player.position.y;
+    const distanceToTarget = Math.sqrt(dx * dx + dy * dy);
+    const angleToTarget = Math.atan2(dy, dx);
+    
+    // 计算玩家当前朝向（根据移动方向）
+    const playerVel = player.velocity;
+    const playerDx = playerVel.x || 0;
+    const playerDy = playerVel.y || 0;
+    const playerAngle = Math.atan2(playerDy, playerDx);
+    const angleDiff = Math.abs(angleToTarget - playerAngle);
+
+    // 检查是否已经瞄准目标 (角度差小于0.15弧度，约8.6度)
+    const isAiming = angleDiff < 0.15 || distanceToTarget < 100;
+    
+    // 检查射击路径是否清晰
+    const hasLineOfSight = this.checkLineOfSight(player, targetEnemy, enemies);
+    
+    // 判断模式
+    const nearbyEnemyCount = enemies.filter(e => {
+      const ex = e.position.x - player.position.x;
+      const ey = e.position.y - player.position.y;
+      return Math.sqrt(ex * ex + ey * ey) < 200;
+    }).length;
+
     if (player.health < 20) {
       this.assistMode = "burst";
-      this.shootingFrequency = 500; // 射击频率加倍
-    }
-    // 规则3: 同波敌人>8个时射击频率+50%，<3个时-30%
-    else if (enemies.length > 8) {
+      this.shootingFrequency = 500;
+    } else if (nearbyEnemyCount > 8) {
       this.assistMode = "burst";
-      this.shootingFrequency = 667; // +50%频率
-    } else if (enemies.length < 3) {
+      this.shootingFrequency = 667;
+    } else if (nearbyEnemyCount < 3) {
       this.assistMode = "normal";
-      this.shootingFrequency = 1430; // -30%频率
+      this.shootingFrequency = 1430;
     } else {
       this.assistMode = "normal";
       this.shootingFrequency = 1000;
     }
+
+    // 射击决策：只有在瞄准后才射击
+    let shouldShoot = false;
     
-    // 规则4: 玩家在掩体后时，辅助AI掩护射击
-    const playerExposure = this.calculatePlayerExposure(player, enemies);
-    if (playerExposure < 0.2) {
-      this.assistMode = "cover";
-    }
-    
-    // 选择目标
-    let targetEnemy = this.selectTarget(player, enemies);
-    
-    // 规则5: 优先攻击正在攻击玩家的敌人
-    const attackingPlayer = enemies.filter(e => {
-      const dx = e.position.x - player.position.x;
-      const dy = e.position.y - player.position.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      return dist < 150;
-    });
-    
-    if (attackingPlayer.length > 0) {
-      targetEnemy = attackingPlayer[0];
-    }
-    
-    // 规则12: 同屏敌人>10个时，优先攻击残血敌
-    if (enemies.length > 10) {
-      const lowHealthEnemies = enemies.filter(e => e.health < e.health * 0.3);
-      if (lowHealthEnemies.length > 0) {
-        targetEnemy = lowHealthEnemies[0];
+    if (isAiming && hasLineOfSight) {
+      // 已经瞄准且有视线，可以射击
+      if (this.assistMode === "burst") {
+        shouldShoot = now % 300 < 150; // 高频射击
+      } else {
+        shouldShoot = true;
       }
+    } else if (!hasLineOfSight && distanceToTarget < 350) {
+      // 无法直接射击但目标较近，尝试预瞄射击
+      const predictedPos = this.predictEnemyPosition(targetEnemy, 0.5);
+      const canHitPredicted = this.checkLineOfSight(player, 
+        { position: { x: predictedPos.x, y: predictedPos.y } } as any, 
+        enemies
+      );
+      shouldShoot = canHitPredicted;
     }
-    
-    const shouldShoot = timeSinceLastShot > 2000 && targetEnemy !== null;
-    
+
+    // 更新玩家射击时间
+    if (!playerShooting) {
+      this.lastPlayerShootTime = now;
+    }
+
     return {
       shouldShoot,
       targetEnemy,
       mode: this.assistMode
+    };
+  }
+
+  /**
+   * 检查射击路径是否清晰
+   */
+  private checkLineOfSight(
+    player: Player,
+    target: { position: { x: number; y: number } },
+    enemies: (Enemy | EliteEnemy | AssassinEnemy)[]
+  ): boolean {
+    const dx = target.position.x - player.position.x;
+    const dy = target.position.y - player.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return distance < 450; // 射程限制
+  }
+
+  /**
+   * 预测敌人位置
+   */
+  private predictEnemyPosition(
+    enemy: Enemy | EliteEnemy | AssassinEnemy,
+    timeAhead: number
+  ): { x: number; y: number } {
+    const vx = (enemy as any).velocityX || 0;
+    const vy = (enemy as any).velocityY || 0;
+    return {
+      x: enemy.position.x + vx * timeAhead * 60, // 假设60fps
+      y: enemy.position.y + vy * timeAhead * 60
     };
   }
   
